@@ -64,7 +64,6 @@ contract CarLeasing is ERC721, ReentrancyGuard {
     // Task 2: Calculate Monthly Quota based on car value, mileage, driver experience, mileage cap, and contract duration
     function calculateMonthlyQuota(
         uint256 _tokenId,
-        uint256 _mileageCap,
         uint256 _contractDuration
     ) public view returns (uint256) {
         Car memory car = cars[_tokenId];
