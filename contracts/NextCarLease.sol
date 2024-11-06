@@ -125,7 +125,7 @@ contract CarLeasing is ERC721, ReentrancyGuard {
         require(leases[_tokenId].active, "Lease inactive");
         require(leases[_tokenId].lessee == msg.sender, "Only lessee can extend lease");
 
-        uint256 newMonthlyQuota = calculateMonthlyQuota(_tokenId, 10000, 12); // Adjusting parameters as needed
+        uint256 newMonthlyQuota = calculateMonthlyQuota(1,2); // Adjusting parameters as needed
         leases[_tokenId].monthlyQuota = newMonthlyQuota;
 
         emit LeaseExtended(_tokenId, msg.sender);
