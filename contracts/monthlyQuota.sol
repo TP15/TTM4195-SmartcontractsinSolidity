@@ -107,6 +107,10 @@ contract CarLeasing is ERC721 {
    
     }
 
+
+    ///Task Nr 3
+    /// 3 Methods: proposeContract, deleteContractProposal, evaluateContract
+
     /// @notice Propose a new contract to the leaser, the contract still needs to be confirmed by the leaser. The amount sent must be at least 4x the monthly quota (1 for the rent and 3 for the deposit).
     /// @param carId the car NFT id to rent
     /// @param drivingExperience the years of driving license ownage
@@ -134,14 +138,17 @@ contract CarLeasing is ERC721 {
 
         uint monthlyQuota = contracts[msg.sender].monthlyQuota;
 
-        require(monthlyQuota > 0, "No contracts found.");
         require(contracts[msg.sender].startTs == 0, "Contract already started.");
 
         payable(msg.sender).transfer(3*monthlyQuota + contracts[msg.sender].amountPayed);
         delete contracts[msg.sender];
     }
 
-    /// @notice Accept or refuse a contract proposal, called by leaser
+    
+    ///@notice This function allows an authorized employee to evaluate a lease contract for a given leasee.
+    ///@dev The function can either approve or reject the contract based on the `accept` parameter.
+    ///@param leasee The address of the leasee whose contract is being evaluated.
+    ///@param accept A boolean indicating whether to accept or reject the contract.
     function evaluateContract(address leasee, bool accept) external onlyEmployee {
         
         Contract storage con = contracts[leasee];
