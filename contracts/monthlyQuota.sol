@@ -12,18 +12,39 @@ contract CarLeasing is ERC721 {
         uint year;
         uint originalValue;
         uint currentMileage;
+        address leasee;
     }
+
+    struct Contract {
+        uint monthlyQuota;
+        uint32 startTs;
+        uint32 carId;
+        uint amountPayed;
+        MileageCap mileageCap;
+        ContractDuration duration;
+    }
+
+    mapping(address => Contract) contracts;
 
     // Initializing contract with a name of NFT collection and a symbol/ticker of the NFT collection
     constructor() ERC721("Group2", "G2") {}
 
     mapping(uint => Car) public cars;
 
+    address payable public employee;
+    uint256 transferrableAmount;
+
     uint public carCounter;
 
     enum MileageCap { SMALL, MEDIUM, LARGE, UNLIMITED }
     enum ContractDuration { ONE_MONTH, THREE_MONTHS, SIX_MONTHS, TWELVE_MONTHS }
-    enum DrivingExperience { NEW_DRIVER, EXPERIENCED_DRIVER } 
+    enum DrivingExperience { NEW_DRIVER, EXPERIENCED_DRIVER }
+
+    // Only the owner of the SC can call the function
+    modifier onlyEmployee() {
+        require( msg.sender == employee , "Only Employees who created the contract can call this.");
+        _;
+    } 
 
     //Creates a NFT for a car
     function addCar(
@@ -36,7 +57,7 @@ contract CarLeasing is ERC721 {
         carCounter++; // create a unique tokenId
         uint tokenId = carCounter;
         _mint(msg.sender, tokenId); //mint = create NFT and give its token to msg.sender which is the one calling it/creating it
-        cars[tokenId] = Car(_model, _color, _year, _originalValue, _currentMilage);
+        cars[tokenId] = Car(_model, _color, _year, _originalValue, _currentMilage, address(0));
         return tokenId;
     }
 
@@ -86,12 +107,58 @@ contract CarLeasing is ERC721 {
    
     }
 
+    /// @notice Propose a new contract to the leaser, the contract still needs to be confirmed by the leaser. The amount sent must be at least 4x the monthly quota (1 for the rent and 3 for the deposit).
+    /// @param carId the car NFT id to rent
+    /// @param drivingExperience the years of driving license ownage
+    /// @param mileageCap the selected mileage limit
+    /// @param duration the duration of the contract
+    function proposeContract(uint32 carId, DrivingExperience drivingExperience, MileageCap mileageCap, ContractDuration duration) external payable {
 
+        Car memory car = cars[carId];
+        // Checks if Car and Sender are valid
+        require(car.year != 0, "[Error] The car doesn't exists.");
+        require(contracts[msg.sender].monthlyQuota == 0, "[Error] You already have a contract."); // easier way to check for previous proposals
+        require(car.leasee == address(0), "[Error] Car not available.");
+        
 
+        uint monthlyQuota = calculateMonthlyQuota(carId, mileageCap, duration, drivingExperience);
 
+        require(msg.value >= 4 * monthlyQuota, "Amount sent is not enough.");
+        require(msg.value <= (3)*monthlyQuota, "Amount sent is too much.");
 
+        contracts[msg.sender] = Contract(monthlyQuota, 0, carId, msg.value - 3*monthlyQuota, mileageCap, duration);
+    }
+    
+    /// @notice Delete and refund a contract proposal, called by leasee
+    function deleteContractProposal() external {
 
+        uint monthlyQuota = contracts[msg.sender].monthlyQuota;
 
+        require(monthlyQuota > 0, "No contracts found.");
+        require(contracts[msg.sender].startTs == 0, "Contract already started.");
 
+        payable(msg.sender).transfer(3*monthlyQuota + contracts[msg.sender].amountPayed);
+        delete contracts[msg.sender];
+    }
 
+    /// @notice Accept or refuse a contract proposal, called by leaser
+    function evaluateContract(address leasee, bool accept) external onlyEmployee {
+        
+        Contract storage con = contracts[leasee];
+
+        require(con.monthlyQuota > 0, "Leasee doesn't have contracts to evaluate.");
+        require(con.startTs == 0, "Leasee contract has already started.");
+
+        if (accept) {
+            Car memory car = cars[con.carId];
+            require(car.leasee == address(0), "Car is already rented!");
+            con.startTs = uint32(block.timestamp);
+            car.leasee = leasee;
+            transferrableAmount += con.amountPayed;
+        } else {
+            payable(leasee).transfer(3*con.monthlyQuota+con.amountPayed);
+            delete contracts[leasee];
+        }
+
+    }
 }
