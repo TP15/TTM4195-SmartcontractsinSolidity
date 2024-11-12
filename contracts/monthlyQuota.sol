@@ -26,13 +26,16 @@ contract CarLeasing is ERC721 {
     }
 
     mapping(address => Contract) contracts;
+    address payable public employee;
 
     // Initializing contract with a name of NFT collection and a symbol/ticker of the NFT collection
-    constructor() ERC721("Group2", "G2") {}
+    constructor() ERC721("Group2", "G2") {
+        employee = payable(msg.sender);
+    }
 
     mapping(uint => Car) public cars;
 
-    address payable public employee;
+    
     uint256 transferrableAmount;
 
     uint public carCounter;
@@ -221,6 +224,40 @@ contract CarLeasing is ERC721 {
         // remove the contract
         delete contracts[msg.sender];
     }
+
+    // Task 5b
+    /**
+    * @notice Allows a leasee to extend their lease contract for an additional year.
+    * @dev Recalculates the monthly quota based on updated parameters and charges a deposit and first payment.
+    *      Updates the contract duration to reflect a one-year extension.
+    * @param drivingExperience The updated driving experience level of the leasee.
+    * @param mileageCap The desired mileage cap for the extended contract.
+    */
+
+    function extendLease(DrivingExperience drivingExperience, MileageCap mileageCap) external payable{
+
+        Contract storage con = contracts[msg.sender];
+        
+        // Check if contract exists and is active
+        require(con.existensFlag, "Contract does not exist.");
+        require(con.startTs > 0, "Contract is not active.");
+        require(block.timestamp >= con.startTs + getDurationInSeconds(con.duration), "Contract period not yet over.");
+
+        // Recalculate the monthly quota based on updated parameters
+        uint newMonthlyQuota = calculateMonthlyQuota(con.carId, mileageCap, ContractDuration.TWELVE_MONTHS, drivingExperience);
+
+        // Check if enough ETH is sent for deposit and the first monthly payment
+        require(msg.value >= 4 * newMonthlyQuota, "Insufficient payment for extension deposit and first monthly quota.");
+
+        // Update the contract fields with the new terms
+        con.monthlyQuota = newMonthlyQuota;
+        con.amountPayed = msg.value - 3 * newMonthlyQuota;
+        con.startTs = uint32(block.timestamp);
+        con.duration = ContractDuration.TWELVE_MONTHS;
+
+    }
+
+
 
 
     // Task 5c
