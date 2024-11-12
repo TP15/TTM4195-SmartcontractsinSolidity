@@ -139,6 +139,11 @@ contract CarLeasing is ERC721 {
         contracts[msg.sender] = Contract(monthlyQuota, 0, carId, msg.value - 3*monthlyQuota, mileageCap, duration, true);
     }
     
+
+
+    ///@notice This function allows a leasee to delete their own contract proposal if it has not yet started.
+    ///@dev The contract proposal can only be deleted before it has been approved and started by an employee.
+ 
     function deleteContractProposal() external {
 
         uint monthlyQuota = contracts[msg.sender].monthlyQuota;
