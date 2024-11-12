@@ -125,9 +125,16 @@ contract CarLeasing is ERC721 {
         require(contracts[msg.sender].existensFlag, "[Error] You already have a contract.");
         require(car.leasee == address(0), "[Error] Car not available.");
         
-
+        // calulation of the monthly Quota
         uint monthlyQuota = calculateMonthlyQuota(carId, mileageCap, duration, drivingExperience);
+        // checking the amount given from the user
+        require(msg.value >= 4 * monthlyQuota, "[Error] Amount sent is not enough.");
 
+        uint durationFactor = duration == ContractDuration.TWELVE_MONTHS ? 1 :
+                              duration == ContractDuration.SIX_MONTHS ? 2 :
+                              duration == ContractDuration.THREE_MONTHS ? 3 : 5;
+
+        require(msg.value <= (3+(durationFactor))*monthlyQuota, "[Error] Amount sent is too much.");
 
         contracts[msg.sender] = Contract(monthlyQuota, 0, carId, msg.value - 3*monthlyQuota, mileageCap, duration, true);
     }
