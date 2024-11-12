@@ -798,9 +798,6 @@
 				"calculateMonthlyQuota(uint256,uint8,uint8,uint8)": {
 					"notice": "Calculates the monthly quota for leasing a car based on various factors."
 				},
-				"deleteContractProposal()": {
-					"notice": "Delete and refund a contract proposal, called by leasee"
-				},
 				"evaluateContract(address,bool)": {
 					"notice": "This function allows an authorized employee to evaluate a lease contract for a given leasee."
 				},
@@ -940,11 +937,11 @@
 			]
 		},
 		"contracts/monthlyQuota.sol": {
-			"keccak256": "0x77fb5deeca5b3b811f17d7b584726370c6ca931270646bced46d9277ea28d36a",
+			"keccak256": "0x5a39f6d332cc9500ac72987f5985a7da703a01976bb03c1046fb71adce69280f",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e58846bec1c8422dba85281feaadc71c1021e70e038f8d6f30e656742570dc55",
-				"dweb:/ipfs/QmTQHpQvtNZ8HkGPk9pLkVLBArYyovDaq9vxhXSrUJP23C"
+				"bzz-raw://778e32de6d989a2797262cdf53088770f2ed2247ed269d985d4868186d7edb82",
+				"dweb:/ipfs/QmUf2GmsR53aCP5ogKmNQeP4vV36tj4quRzJHq2Ldeosea"
 			]
 		}
 	},

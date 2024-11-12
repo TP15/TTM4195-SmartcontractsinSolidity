@@ -22,6 +22,7 @@ contract CarLeasing is ERC721 {
         uint amountPayed;
         MileageCap mileageCap;
         ContractDuration duration;
+        bool existensFlag;
     }
 
     mapping(address => Contract) contracts;
@@ -121,19 +122,16 @@ contract CarLeasing is ERC721 {
         Car memory car = cars[carId];
         // Checks if Car and Sender are valid
         require(car.year != 0, "[Error] The car doesn't exists.");
-        require(contracts[msg.sender].monthlyQuota == 0, "[Error] You already have a contract."); // easier way to check for previous proposals
+        require(contracts[msg.sender].existensFlag, "[Error] You already have a contract.");
         require(car.leasee == address(0), "[Error] Car not available.");
         
 
         uint monthlyQuota = calculateMonthlyQuota(carId, mileageCap, duration, drivingExperience);
 
-        require(msg.value >= 4 * monthlyQuota, "Amount sent is not enough.");
-        require(msg.value <= (3)*monthlyQuota, "Amount sent is too much.");
 
-        contracts[msg.sender] = Contract(monthlyQuota, 0, carId, msg.value - 3*monthlyQuota, mileageCap, duration);
+        contracts[msg.sender] = Contract(monthlyQuota, 0, carId, msg.value - 3*monthlyQuota, mileageCap, duration, true);
     }
     
-    /// @notice Delete and refund a contract proposal, called by leasee
     function deleteContractProposal() external {
 
         uint monthlyQuota = contracts[msg.sender].monthlyQuota;
