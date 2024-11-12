@@ -178,4 +178,68 @@ contract CarLeasing is ERC721 {
         }
 
     }
+
+
+    /**
+    * @notice Converts a ContractDuration enum value into corresponding duration in seconds.
+    * @dev This function is used to calculate the length of a lease period in seconds.
+    * @param duration The contract duration, represented as an enum value of `ContractDuration`.
+    *                 Valid values are ONE_MONTH, THREE_MONTHS, SIX_MONTHS, and TWELVE_MONTHS.
+    * @return The duration of the contract in seconds.
+    */
+    function getDurationInSeconds(ContractDuration duration) internal pure returns (uint32) {
+        if (duration == ContractDuration.TWELVE_MONTHS) return 365 days;
+        if (duration == ContractDuration.SIX_MONTHS) return 182 days;
+        if (duration == ContractDuration.THREE_MONTHS) return 90 days;
+        return 30 days; // case for duration == ONE_MONTH
+    }
+
+    // Task 5a
+    /**
+    * @notice Allows a leasee to terminate their contract once the lease period has ended.
+    * @dev Ensures the lease period has expired and refunds any remaining deposit to the leasee.
+    *      Also resets the car's availability and removes the contract from the mapping.
+    */
+    function terminateContract() external {
+
+        Contract storage con = contracts[msg.sender];
+
+        // Check if the contract exists
+        require(con.existensFlag, "Contract does not exist.");
+        require(con.startTs > 0, "Contract not active.");
+        require(block.timestamp >= con.startTs + getDurationInSeconds(con.duration), "Contract period not yet over.");
+
+        // refund potentially remaining deposit to leasee
+        uint refundableAmount = 3 * con.monthlyQuota;
+        if (refundableAmount > 0) {
+            payable(msg.sender).transfer(refundableAmount);
+        }
+
+        // reset car availability
+        cars[con.carId].leasee = address(0);
+
+        // remove the contract
+        delete contracts[msg.sender];
+    }
+
+
+    // Task 5c
+    /**
+    * @notice Allows a leasee to terminate their existing contract and immediately sign a new one for a different car.
+    * @dev Terminates the existing contract and proposes a new contract for a different vehicle.
+    * @param newCarId The ID of the new car to lease.
+    * @param drivingExperience The driving experience of the leasee.
+    * @param mileageCap The selected mileage cap for the new contract.
+    * @param duration The duration of the new contract.
+    *                 Valid values are ONE_MONTH, THREE_MONTHS, SIX_MONTHS, and TWELVE_MONTHS.
+    */
+    function signNewContract(uint32 newCarId, DrivingExperience drivingExperience, MileageCap mileageCap, ContractDuration duration) external payable {
+        // properly terminate current contract (inlcuding checking that it really ended)
+        this.terminateContract();
+
+        // propose a new contract for new car
+        this.proposeContract(newCarId, drivingExperience, mileageCap, duration);
+    }
+
+    
 }
