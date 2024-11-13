@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
-
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "./Car.sol";
 
 contract CarLeasing is ERC721 {
 
     //Struct to define types
-    struct Car { 
-        string model;
-        string color;
-        uint year;
-        uint originalValue;
-        uint currentMileage;
-        address leasee;
-    }
+    // struct Car { 
+    //     string model;
+    //     string color;
+    //     uint year;
+    //     uint originalValue;
+    //     uint currentMileage;
+    //     address leasee;
+    // }
 
     struct Contract {
         uint monthlyQuota;
@@ -27,18 +26,20 @@ contract CarLeasing is ERC721 {
 
     mapping(address => Contract) contracts;
     address payable public employee;
+    CarToken public token;
 
     // Initializing contract with a name of NFT collection and a symbol/ticker of the NFT collection
     constructor() ERC721("Group2", "G2") {
         employee = payable(msg.sender);
+        token = new CarToken();
     }
 
-    mapping(uint => Car) public cars;
+    //mapping(uint => Car) public cars;
 
     
     uint256 transferrableAmount;
 
-    uint public carCounter;
+    //uint public carCounter;
 
     enum MileageCap { SMALL, MEDIUM, LARGE, UNLIMITED }
     enum ContractDuration { ONE_MONTH, THREE_MONTHS, SIX_MONTHS, TWELVE_MONTHS }
@@ -51,19 +52,19 @@ contract CarLeasing is ERC721 {
     } 
 
     //Creates a NFT for a car
-    function addCar(
-        string memory _model,
-        string memory _color,
-        uint _year,
-        uint _originalValue,
-        uint _currentMilage
-    ) public returns (uint256) {
-        carCounter++; // create a unique tokenId
-        uint tokenId = carCounter;
-        _mint(msg.sender, tokenId); //mint = create NFT and give its token to msg.sender which is the one calling it/creating it
-        cars[tokenId] = Car(_model, _color, _year, _originalValue, _currentMilage, address(0));
-        return tokenId;
-    }
+    // function addCar(
+    //     string memory _model,
+    //     string memory _color,
+    //     uint _year,
+    //     uint _originalValue,
+    //     uint _currentMilage
+    // ) public returns (uint256) {
+    //     carCounter++; // create a unique tokenId
+    //     uint tokenId = carCounter;
+    //     _mint(msg.sender, tokenId); //mint = create NFT and give its token to msg.sender which is the one calling it/creating it
+    //     cars[tokenId] = Car(_model, _color, _year, _originalValue, _currentMilage, address(0));
+    //     return tokenId;
+    // }
 
     /**
     * @notice Calculates the monthly quota for leasing a car based on various factors.
@@ -86,7 +87,7 @@ contract CarLeasing is ERC721 {
         ) public view returns (uint) {
         
 
-        Car memory car = cars[_tokenId];
+        CarLibrary.Car memory car = token.getCar(_tokenId);
         uint experienceFactor = drivingExperience == DrivingExperience.NEW_DRIVER ? 2 : 1;
 
         //Determine mileage cap factor
@@ -122,7 +123,7 @@ contract CarLeasing is ERC721 {
     /// @param duration the duration of the contract
     function proposeContract(uint32 carId, DrivingExperience drivingExperience, MileageCap mileageCap, ContractDuration duration) external payable {
 
-        Car memory car = cars[carId];
+        CarLibrary.Car memory car = token.getCar(carId);
         // Checks if Car and Sender are valid
         require(car.year != 0, "[Error] The car doesn't exists.");
         require(contracts[msg.sender].existensFlag, "[Error] You already have a contract.");
@@ -170,7 +171,7 @@ contract CarLeasing is ERC721 {
         require(con.startTs == 0, "Leasee contract has already started.");
 
         if (accept) {
-            Car memory car = cars[con.carId];
+            CarLibrary.Car memory car = token.getCar(con.carId);
             require(car.leasee == address(0), "Car is already rented!");
             con.startTs = uint32(block.timestamp);
             car.leasee = leasee;
@@ -219,7 +220,8 @@ contract CarLeasing is ERC721 {
         }
 
         // reset car availability
-        cars[con.carId].leasee = address(0);
+        token.getCar(con.carId).leasee = address(0);
+        //CarToken.cars[con.carId].leasee = address(0);
 
         // remove the contract
         delete contracts[msg.sender];
