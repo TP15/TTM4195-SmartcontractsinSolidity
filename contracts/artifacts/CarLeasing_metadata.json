@@ -191,45 +191,6 @@
 			{
 				"inputs": [
 					{
-						"internalType": "string",
-						"name": "_model",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "_color",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_year",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_originalValue",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "_currentMilage",
-						"type": "uint256"
-					}
-				],
-				"name": "addCar",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "nonpayable",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
 						"internalType": "address",
 						"name": "to",
 						"type": "address"
@@ -300,63 +261,6 @@
 			},
 			{
 				"inputs": [],
-				"name": "carCounter",
-				"outputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [
-					{
-						"internalType": "uint256",
-						"name": "",
-						"type": "uint256"
-					}
-				],
-				"name": "cars",
-				"outputs": [
-					{
-						"internalType": "string",
-						"name": "model",
-						"type": "string"
-					},
-					{
-						"internalType": "string",
-						"name": "color",
-						"type": "string"
-					},
-					{
-						"internalType": "uint256",
-						"name": "year",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "originalValue",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "currentMileage",
-						"type": "uint256"
-					},
-					{
-						"internalType": "address",
-						"name": "leasee",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
-			},
-			{
-				"inputs": [],
 				"name": "deleteContractProposal",
 				"outputs": [],
 				"stateMutability": "nonpayable",
@@ -391,6 +295,24 @@
 				"name": "evaluateContract",
 				"outputs": [],
 				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "enum CarLeasing.DrivingExperience",
+						"name": "drivingExperience",
+						"type": "uint8"
+					},
+					{
+						"internalType": "enum CarLeasing.MileageCap",
+						"name": "mileageCap",
+						"type": "uint8"
+					}
+				],
+				"name": "extendLease",
+				"outputs": [],
+				"stateMutability": "payable",
 				"type": "function"
 			},
 			{
@@ -500,6 +422,19 @@
 				"inputs": [
 					{
 						"internalType": "address",
+						"name": "leasee",
+						"type": "address"
+					}
+				],
+				"name": "protectAgainstInsolventCustomer",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
 						"name": "from",
 						"type": "address"
 					},
@@ -568,6 +503,34 @@
 			{
 				"inputs": [
 					{
+						"internalType": "uint32",
+						"name": "newCarId",
+						"type": "uint32"
+					},
+					{
+						"internalType": "enum CarLeasing.DrivingExperience",
+						"name": "drivingExperience",
+						"type": "uint8"
+					},
+					{
+						"internalType": "enum CarLeasing.MileageCap",
+						"name": "mileageCap",
+						"type": "uint8"
+					},
+					{
+						"internalType": "enum CarLeasing.ContractDuration",
+						"name": "duration",
+						"type": "uint8"
+					}
+				],
+				"name": "signNewContract",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
 						"internalType": "bytes4",
 						"name": "interfaceId",
 						"type": "bytes4"
@@ -592,6 +555,26 @@
 						"internalType": "string",
 						"name": "",
 						"type": "string"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "terminateContract",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "token",
+				"outputs": [
+					{
+						"internalType": "contract CarToken",
+						"name": "",
+						"type": "address"
 					}
 				],
 				"stateMutability": "view",
@@ -741,11 +724,21 @@
 						"_0": "monthlyQuota The calculated monthly quota in Wei."
 					}
 				},
+				"deleteContractProposal()": {
+					"details": "The contract proposal can only be deleted before it has been approved and started by an employee."
+				},
 				"evaluateContract(address,bool)": {
 					"details": "The function can either approve or reject the contract based on the `accept` parameter.",
 					"params": {
 						"accept": "A boolean indicating whether to accept or reject the contract.",
 						"leasee": "The address of the leasee whose contract is being evaluated."
+					}
+				},
+				"extendLease(uint8,uint8)": {
+					"details": "Recalculates the monthly quota based on updated parameters and charges a deposit and first payment.      Updates the contract duration to reflect a one-year extension.",
+					"params": {
+						"drivingExperience": "The updated driving experience level of the leasee.",
+						"mileageCap": "The desired mileage cap for the extended contract."
 					}
 				},
 				"getApproved(uint256)": {
@@ -777,11 +770,23 @@
 				"setApprovalForAll(address,bool)": {
 					"details": "See {IERC721-setApprovalForAll}."
 				},
+				"signNewContract(uint32,uint8,uint8,uint8)": {
+					"details": "Terminates the existing contract and proposes a new contract for a different vehicle.",
+					"params": {
+						"drivingExperience": "The driving experience of the leasee.",
+						"duration": "The duration of the new contract.                 Valid values are ONE_MONTH, THREE_MONTHS, SIX_MONTHS, and TWELVE_MONTHS.",
+						"mileageCap": "The selected mileage cap for the new contract.",
+						"newCarId": "The ID of the new car to lease."
+					}
+				},
 				"supportsInterface(bytes4)": {
 					"details": "See {IERC165-supportsInterface}."
 				},
 				"symbol()": {
 					"details": "See {IERC721Metadata-symbol}."
+				},
+				"terminateContract()": {
+					"details": "Ensures the lease period has expired and refunds any remaining deposit to the leasee.      Also resets the car's availability and removes the contract from the mapping."
 				},
 				"tokenURI(uint256)": {
 					"details": "See {IERC721Metadata-tokenURI}."
@@ -798,11 +803,26 @@
 				"calculateMonthlyQuota(uint256,uint8,uint8,uint8)": {
 					"notice": "Calculates the monthly quota for leasing a car based on various factors."
 				},
+				"deleteContractProposal()": {
+					"notice": "This function allows a leasee to delete their own contract proposal if it has not yet started."
+				},
 				"evaluateContract(address,bool)": {
 					"notice": "This function allows an authorized employee to evaluate a lease contract for a given leasee."
 				},
+				"extendLease(uint8,uint8)": {
+					"notice": "Allows a leasee to extend their lease contract for an additional year."
+				},
 				"proposeContract(uint32,uint8,uint8,uint8)": {
 					"notice": "Propose a new contract to the leaser, the contract still needs to be confirmed by the leaser. The amount sent must be at least 4x the monthly quota (1 for the rent and 3 for the deposit)."
+				},
+				"protectAgainstInsolventCustomer(address)": {
+					"notice": "Task 4 "
+				},
+				"signNewContract(uint32,uint8,uint8,uint8)": {
+					"notice": "Allows a leasee to terminate their existing contract and immediately sign a new one for a different car."
+				},
+				"terminateContract()": {
+					"notice": "Allows a leasee to terminate their contract once the lease period has ended."
 				}
 			},
 			"version": 1
@@ -824,6 +844,14 @@
 		"remappings": []
 	},
 	"sources": {
+		"@openzeppelin/contracts/access/Ownable.sol": {
+			"keccak256": "0xff6d0bb2e285473e5311d9d3caacb525ae3538a80758c10649a4d61029b017bb",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://8ed324d3920bb545059d66ab97d43e43ee85fd3bd52e03e401f020afb0b120f6",
+				"dweb:/ipfs/QmfEckWLmZkDDcoWrkEvMWhms66xwTLff9DDhegYpvHo1a"
+			]
+		},
 		"@openzeppelin/contracts/interfaces/draft-IERC6093.sol": {
 			"keccak256": "0x880da465c203cec76b10d72dbd87c80f387df4102274f23eea1f9c9b0918792b",
 			"license": "MIT",
@@ -878,6 +906,14 @@
 			"urls": [
 				"bzz-raw://6a708e8a5bdb1011c2c381c9a5cfd8a9a956d7d0a9dc1bd8bcdaf52f76ef2f12",
 				"dweb:/ipfs/Qmax9WHBnVsZP46ZxEMNRQpLQnrdE4dK8LehML1Py8FowF"
+			]
+		},
+		"@openzeppelin/contracts/utils/Counters.sol": {
+			"keccak256": "0xf0018c2440fbe238dd3a8732fa8e17a0f9dce84d31451dc8a32f6d62b349c9f1",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://59e1c62884d55b70f3ae5432b44bb3166ad71ae3acd19c57ab6ddc3c87c325ee",
+				"dweb:/ipfs/QmezuXg5GK5oeA4F91EZhozBFekhq5TD966bHPH18cCqhu"
 			]
 		},
 		"@openzeppelin/contracts/utils/Panic.sol": {
@@ -936,12 +972,20 @@
 				"dweb:/ipfs/QmVUSvooZKEdEdap619tcJjTLcAuH6QBdZqAzWwnAXZAWJ"
 			]
 		},
+		"contracts/Car.sol": {
+			"keccak256": "0xb99d8504a1d21407f2ad4ca29bc83a2511fb9453c03220a38a740538ad29c169",
+			"license": "GPL-3.0",
+			"urls": [
+				"bzz-raw://35d4f5aad1e91662fa3166397398017ee94d7d5a8dc256eea5385c2f0687fd98",
+				"dweb:/ipfs/QmX3DE6TfLj9SmAXvF9hWFHNbxMuJ9QrwEd4MWAq5yNz7i"
+			]
+		},
 		"contracts/monthlyQuota.sol": {
-			"keccak256": "0x5a39f6d332cc9500ac72987f5985a7da703a01976bb03c1046fb71adce69280f",
+			"keccak256": "0x15175fe1994ec4cd7006f9a8ec243210698ae15242e71d6e901cee8142f78010",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://778e32de6d989a2797262cdf53088770f2ed2247ed269d985d4868186d7edb82",
-				"dweb:/ipfs/QmUf2GmsR53aCP5ogKmNQeP4vV36tj4quRzJHq2Ldeosea"
+				"bzz-raw://ec53673159aade4fff57cd05339893b0baccaf7a96e3dd99bbbaa8065ef5e6e1",
+				"dweb:/ipfs/QmNr4urpkRwsqBynT2jtnq8SyFhpUqtfvUdaj5hx1XbcM6"
 			]
 		}
 	},

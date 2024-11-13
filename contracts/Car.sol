@@ -55,6 +55,11 @@ contract CarToken is ERC721 {
         return cars[tokenId];
     }
 
+    function updateCarLeasee(uint carId, address newLeasee) external {
+        require(ownerOf(carId) == msg.sender, "Only owner has permission to update the leasee");
+        cars[carId].leasee = newLeasee;
+    }
+
 
 }
 
