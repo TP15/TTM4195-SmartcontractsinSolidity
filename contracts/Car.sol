@@ -13,6 +13,7 @@ library CarLibrary {
         uint originalValue;
         uint currentMileage;
         address leasee;
+        address owner;
     }
 }
 
@@ -21,33 +22,19 @@ contract CarToken is ERC721 {
     constructor() ERC721("CarToken", "CT2") {}
     mapping(uint => CarLibrary.Car) public cars;
 
-    // modifier onlyTokenOwner(uint tokenId) {
-    //     require(_isApprovedOrOwner(_msgSender(), tokenId), "Caller is not owner nor approved");
-    //     _;
-    // }
-
-    modifier  notLeased(uint tokenId) {
-        require(cars[tokenId].leasee == address(0), "Cannot modify a leased car.");
-        _;
-    }
-
-    // modifier  existingCar(uint tokenId) {
-    //     require(_exists(uint(tokenId)), "Car doesn't exist.");
-    //     _;
-    // }
-
     uint public carCounter;
     function addCar(
         string memory _model,
         string memory _color,
         uint _year,
         uint _originalValue,
-        uint _currentMilage
+        uint _currentMilage,
+        address _owner
     ) public returns (uint256) {
         carCounter++; // create a unique tokenId
         uint tokenId = carCounter;
         _mint(msg.sender, tokenId); //mint = create NFT and give its token to msg.sender which is the one calling it/creating it
-        cars[tokenId] = CarLibrary.Car(_model, _color, _year, _originalValue, _currentMilage, address(0));
+        cars[tokenId] = CarLibrary.Car(_model, _color, _year, _originalValue, _currentMilage,address(0), _owner);
         return tokenId;
     }
 
@@ -55,10 +42,15 @@ contract CarToken is ERC721 {
         return cars[tokenId];
     }
 
-    function updateCarLeasee(uint carId, address newLeasee) external {
-        require(ownerOf(carId) == msg.sender, "Only owner has permission to update the leasee");
-        cars[carId].leasee = newLeasee;
+    function updateCarLeasee(uint tokenId, address newLeasee) external {
+        require(cars[tokenId].owner == msg.sender, "Only owner has permission to update the leasee");
+        cars[tokenId].leasee = newLeasee;
     }
+
+    function deleteCar(uint tokenId) public {
+    delete cars[tokenId];
+    }
+
 
 
 }
