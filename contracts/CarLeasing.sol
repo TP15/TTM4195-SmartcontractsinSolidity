@@ -62,7 +62,7 @@ contract CarLeasing {
         uint256 _year,
         uint256 _originalValue,
         uint256 _currentMilage
-    ) public returns (uint256) {
+    ) public onlyEmployee returns (uint256) {
         uint256 token;
         token = carContract.addCar(_model, _color, _year, _originalValue, _currentMilage);
         return token;
