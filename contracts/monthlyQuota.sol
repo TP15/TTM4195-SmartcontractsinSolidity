@@ -185,6 +185,44 @@ contract CarLeasing is ERC721 {
 
 
     /**
+    *Task 4
+    * @dev this function lets only employees to check if a customer is insolvent and delete the contract
+    * @dev the deposit will be refunded
+    */
+    function protectAgainstInsolventCustomer(address leasee) external onlyEmployee {
+        Contract storage contr = contracts[leasee];
+
+        require(contr.existensFlag, "No contract exists");
+        require(contr.startTs > 0, "Contract is not active");
+        
+        uint monthsActive = (block.timestamp - contr.startTs) / 30 days;
+
+        uint due = monthsActive * contr.monthlyQuota;
+
+        // Check if the leasee has not paid the required amount
+        if (contr.amountPayed < due) {
+            CarLibrary.Car memory car = token.getCar(contr.carId);
+            require(car.leasee == leasee, "Leasee does not have this car leased");
+
+            // Reset the leasee of the car to make it available again
+            token.updateCarLeasee(contr.carId, address(0));
+
+            // Refund the deposit if applicable
+            uint refundableAmount = 3 * contr.monthlyQuota;
+            if (refundableAmount > 0) {
+                payable(leasee).transfer(refundableAmount);
+            }
+
+            // should I emit that the contract is terminated?
+
+            // Delete the lease contract
+            delete contracts[leasee];
+        }
+    }
+
+
+
+    /**
     * @notice Converts a ContractDuration enum value into corresponding duration in seconds.
     * @dev This function is used to calculate the length of a lease period in seconds.
     * @param duration The contract duration, represented as an enum value of `ContractDuration`.
