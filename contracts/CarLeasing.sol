@@ -348,6 +348,23 @@ contract CarLeasing {
         return 30 days; // case for duration == ONE_MONTH
     }
 
+    /**
+     * @notice Helper function to set the start timestamp of a contract for testing purposes.
+     * @dev Only the contract employee can call this function. This is only for testing purposes and would not be included in a real contract.
+     * @param leasee The address of the leasee whose contract start timestamp is being modified.
+     */
+    function setStartTimestampHelperFunction(address leasee)
+        external
+        onlyEmployee
+    {
+        Contract storage con = contracts[leasee];
+
+        require(con.existensFlag, "Contract does not exist.");
+        require(con.startTs > 0, "Contract is not active.");
+
+        con.startTs = 1685577600;
+    }
+
     // Task 5a
     /**
      * @notice Allows a leasee to terminate their contract once the lease period has ended.
