@@ -55,7 +55,15 @@ contract CarLeasing {
     }
 
 
-
+    /**
+    * @notice Adds a new car in the Car contract.
+    * @param _model The model of the car
+    * @param _color The color of the car
+    * @param _year The manufacturing year of the car
+    * @param _originalValue The initial value of the car in dollar
+    * @param _currentMilage The current mileage of the car in miles.
+    * @return carToken The unique token ID of the newly added car.
+    */
     function addCar(
         string memory _model,
         string memory _color,
@@ -149,10 +157,12 @@ contract CarLeasing {
         CarLibrary.CarStruct memory car = carContract.getCar(carId);
         // Checks if Car and Sender are valid
         require(car.year != 0, "[Error] The car doesn't exists.");
+        //checks if there is already a contract
         require(
             !contracts[msg.sender].existensFlag,
             "[Error] You already have a contract."
         );
+        // checks if the car is already leased
         require(car.leasee == address(0), "[Error] Car not available.");
 
         // calulation of the monthly Quota
@@ -167,7 +177,7 @@ contract CarLeasing {
             msg.value >= 4 * monthlyQuota,
             "[Error] Amount sent is not enough."
         );
-
+        // getting the durationfactors
         uint256 durationFactor = duration == ContractDuration.TWELVE_MONTHS
             ? 1
             : duration == ContractDuration.SIX_MONTHS
@@ -175,12 +185,12 @@ contract CarLeasing {
             : duration == ContractDuration.THREE_MONTHS
             ? 3
             : 5;
-
+        // checking if to much money was send
         require(
             msg.value <= (3 + (durationFactor)) * monthlyQuota,
             "[Error] Amount sent is too much."
         );
-
+        //creating contract
         contracts[msg.sender] = Contract(
             monthlyQuota,
             0,
@@ -199,18 +209,18 @@ contract CarLeasing {
 
     function deleteContractProposal() external {
         uint256 monthlyQuota = contracts[msg.sender].monthlyQuota;
-
+        // checking that contract is not running
         require(
             contracts[msg.sender].startTs == 0,
             "Contract already started."
         );
-
+        // sending back the money
         payable(msg.sender).transfer(
             3 * monthlyQuota + contracts[msg.sender].amountPayed
         );
         delete contracts[msg.sender];
     }
-
+    // helper function the see the contract proposals
     function getContract(address _Owner)
         external
         view
@@ -220,7 +230,7 @@ contract CarLeasing {
         Contract storage con = contracts[_Owner];
         return con;
     }
-
+    // helper function to see the inactive contracts
     function getInactiveContracts()
         external
         view
@@ -260,13 +270,13 @@ contract CarLeasing {
         onlyEmployee
     {
         Contract storage con = contracts[leasee];
-
+        // checking if contract is available
         require(
             con.monthlyQuota > 0,
             "Leasee doesn't have contracts to evaluate."
         );
         require(con.startTs == 0, "Leasee contract has already started.");
-
+        // giving the car to the user
         if (accept) {
             CarLibrary.CarStruct memory car = carContract.getCar(con.carId);
             require(car.leasee == address(0), "Car is already rented!");
@@ -275,6 +285,7 @@ contract CarLeasing {
             car.leasee = leasee;
             transferrableAmount += con.amountPayed;
         } else {
+            // refund the money
             payable(leasee).transfer(3 * con.monthlyQuota + con.amountPayed);
             delete contracts[leasee];
         }
