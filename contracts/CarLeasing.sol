@@ -13,6 +13,8 @@ contract CarLeasing {
         ContractDuration duration;
         bool existensFlag;
         bool isactiveFlag;
+        bool extensionRequested;
+        uint256 requestedMonthlyQuota;
     }
 
     mapping(address => Contract) contracts;
@@ -193,7 +195,9 @@ contract CarLeasing {
             mileageCap,
             duration,
             true,
-            false
+            false,
+            false,
+            0
         );
         contractAddresses.push(msg.sender);
     }
@@ -379,14 +383,13 @@ contract CarLeasing {
 
     // Task 5b
     /**
-     * @notice Allows a leasee to extend their lease contract for an additional year.
-     * @dev Recalculates the monthly quota based on updated parameters and charges a deposit and first payment.
-     *      Updates the contract duration to reflect a one-year extension.
-     * @param drivingExperience The updated driving experience level of the leasee.
-     * @param mileageCap The desired mileage cap for the extended contract.
-     */
-
-    function extendLease(
+    * @notice Allows a leasee to request an extension of their current lease contract for an additional twelve months.
+    * @dev Recalculates the monthly quota based on updated parameters provided by the leasee.
+    *      If a deposit has already been paid, the difference is adjusted based on the new required deposit.
+    * @param drivingExperience The updated driving experience level of the leasee.
+    * @param mileageCap The desired mileage cap for the extended contract.
+    */
+    function requestLeaseExtension(
         DrivingExperience drivingExperience,
         MileageCap mileageCap
     ) external payable {
@@ -408,17 +411,64 @@ contract CarLeasing {
             drivingExperience
         );
 
-        // Check if enough ETH is sent for deposit and the first monthly payment
+        // Calculate the old and new required deposit amounts
+        uint256 oldRequiredDeposit = 3 * con.monthlyQuota;
+        uint256 newRequiredDeposit = 3 * newMonthlyQuota;
+
+        uint256 additionalDepositRequired;
+        if (newRequiredDeposit > oldRequiredDeposit) {
+            // If the new deposit is greater than the old deposit, calculate the additional deposit needed
+            additionalDepositRequired = newRequiredDeposit - oldRequiredDeposit;
+        } else {
+            // If the old deposit is greater, add the difference to amountPayed as surplus
+            con.amountPayed += oldRequiredDeposit - newRequiredDeposit;
+            additionalDepositRequired = 0;
+        }
+
+        // Check if the correct payment is sent
         require(
-            msg.value >= 4 * newMonthlyQuota,
+            msg.value >= additionalDepositRequired + newMonthlyQuota,
             "Insufficient payment for extension deposit and first monthly quota."
         );
 
         // Update the contract fields with the new terms
-        con.monthlyQuota = newMonthlyQuota;
-        con.amountPayed = msg.value - 3 * newMonthlyQuota;
-        con.startTs = uint32(block.timestamp);
-        con.duration = ContractDuration.TWELVE_MONTHS;
+        con.requestedMonthlyQuota = newMonthlyQuota;
+        con.extensionRequested = true;
+        con.amountPayed += msg.value - additionalDepositRequired;
+    }
+
+    /**
+    * @notice Allows an employee to approve or reject a lease extension request.
+    * @dev If accepted, the contract terms are updated to reflect the new monthly quota and a twelve-month extension.
+    *      If rejected, the additional payment is refunded, and the contract is terminated.
+    * @param leasee The address of the leasee who requested the extension.
+    * @param accept A boolean indicating whether to approve (true) or reject (false) the extension request.
+    */
+    function approveExtension(address leasee, bool accept) external onlyEmployee {
+        Contract storage con = contracts[leasee];
+
+        require(con.extensionRequested, "No extension request found.");
+
+        if (accept) {
+            // Apply the new lease terms
+            con.monthlyQuota = con.requestedMonthlyQuota;
+            con.startTs = uint32(block.timestamp);
+            con.duration = ContractDuration.TWELVE_MONTHS;
+            con.extensionRequested = false;
+            con.requestedMonthlyQuota = 0;
+        } else {           
+            // Rejection: refund the leasee's additional payment and terminate the contract
+            uint256 refundableAmount = 3 * con.requestedMonthlyQuota + con.amountPayed;
+        
+            // Reset car availability in the Car contract
+            carContract.updateCarLeasee(con.carId, address(0));
+        
+            // Refund the deposit and any other payment
+            payable(leasee).transfer(refundableAmount);
+        
+            // Delete the contract and reset extension request fields
+            delete contracts[leasee];
+        }
     }
 
     // Task 5c
