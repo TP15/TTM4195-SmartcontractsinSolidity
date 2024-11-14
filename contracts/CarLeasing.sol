@@ -3,15 +3,6 @@ pragma solidity ^0.8.26;
 import "./Car.sol";
 
 contract CarLeasing {
-    //Struct to define types
-    // struct Car {
-    //     string model;
-    //     string color;
-    //     uint year;
-    //     uint originalValue;
-    //     uint currentMileage;
-    //     address leasee;
-    // }
 
     struct Contract {
         uint256 monthlyQuota;
@@ -26,22 +17,11 @@ contract CarLeasing {
 
     mapping(address => Contract) contracts;
     address payable public employee;
-    CarToken public token;
     address[] private contractAddresses; // Track addresses with contracts
-    uint256[] private cars;
-    uint256 public carCounter;
-
-    // Initializing contract with a name of NFT collection and a symbol/ticker of the NFT collection
-    constructor() {
-        employee = payable(msg.sender);
-        token = new CarToken();
-    }
-
-    //mapping(uint => Car) public cars;
+    Car public carContract; // Reference to Car contract
 
     uint256 transferrableAmount;
 
-    //uint public carCounter;
 
     enum MileageCap {
         SMALL,
@@ -69,18 +49,10 @@ contract CarLeasing {
         _;
     }
 
-    //Creates a NFT for a car
-    function addCar(
-        string memory _model,
-        string memory _color,
-        uint _year,
-        uint _originalValue,
-        uint _currentMilage
-    ) public onlyEmployee returns (uint256) {
-        uint tokenId = token.addCar(_model, _color, _year, _originalValue, _currentMilage, msg.sender);
-        cars.push(tokenId);
-        return tokenId;
-     }
+    constructor(address _carContractAddress) {
+        carContract = Car(_carContractAddress);
+        employee = payable(msg.sender);
+    }
 
     /**
      * @notice Calculates the monthly quota for leasing a car based on various factors.
@@ -101,9 +73,8 @@ contract CarLeasing {
         ContractDuration contractDuration,
         DrivingExperience drivingExperience
     ) public view returns (uint256) {
-        CarLibrary.Car memory car = token.getCar(_tokenId);
-        uint256 experienceFactor = drivingExperience ==
-            DrivingExperience.NEW_DRIVER
+        CarLibrary.CarStruct memory car = carContract.getCar(_tokenId);
+        uint256 experienceFactor = drivingExperience == DrivingExperience.NEW_DRIVER
             ? 2
             : 1;
 
@@ -135,16 +106,19 @@ contract CarLeasing {
             ? 3
             : 5;
 
+        // Calculates a value used to modify the monthly quota calculation based on a cars current mileage
+        uint256 mileageModifier = 1 + ((car.currentMileage + 1) / 10000);
+        
         // Calculate the monthly quota
         uint256 monthlyQuota = (experienceFactor *
             mileageFactor *
             carValueFactor *
-            durationFactor) / (1 + ((car.currentMileage + 1) / 10000));
+            durationFactor) / mileageModifier;
 
         return monthlyQuota * 1e6 + 1e7; // Scale by 1e6 Wei and add 1e7 Wei minimum
     }
 
-    ///Task Nr 3
+    ///Task 3
     /// 3 Methods: proposeContract, deleteContractProposal, evaluateContract
 
     /// @notice Propose a new contract to the leaser, the contract still needs to be confirmed by the leaser. The amount sent must be at least 4x the monthly quota (1 for the rent and 3 for the deposit).
@@ -158,7 +132,7 @@ contract CarLeasing {
         MileageCap mileageCap,
         ContractDuration duration
     ) external payable {
-        CarLibrary.Car memory car = token.getCar(carId);
+        CarLibrary.CarStruct memory car = carContract.getCar(carId);
         // Checks if Car and Sender are valid
         require(car.year != 0, "[Error] The car doesn't exists.");
         require(
@@ -270,7 +244,7 @@ contract CarLeasing {
         require(con.startTs == 0, "Leasee contract has already started.");
 
         if (accept) {
-            CarLibrary.Car memory car = token.getCar(con.carId);
+            CarLibrary.CarStruct memory car = carContract.getCar(con.carId);
             require(car.leasee == address(0), "Car is already rented!");
             con.startTs = uint32(block.timestamp);
             con.isactiveFlag = true;
@@ -302,14 +276,14 @@ contract CarLeasing {
 
         // Check if the leasee has not paid the required amount
         if (contr.amountPayed < due) {
-            CarLibrary.Car memory car = token.getCar(contr.carId);
+            CarLibrary.CarStruct memory car = carContract.getCar(contr.carId);
             require(
                 car.leasee == leasee,
                 "Leasee does not have this car leased"
             );
 
             // Reset the leasee of the car to make it available again
-            token.updateCarLeasee(contr.carId, address(0));
+            carContract.updateCarLeasee(contr.carId, address(0));
 
             // Refund the deposit if applicable
             uint256 refundableAmount = 3 * contr.monthlyQuota;
@@ -366,7 +340,7 @@ contract CarLeasing {
         }
 
         // reset car availability
-        token.getCar(con.carId).leasee = address(0);
+        carContract.getCar(con.carId).leasee = address(0);
         //CarToken.cars[con.carId].leasee = address(0);
 
         // remove the contract
