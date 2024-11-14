@@ -54,6 +54,20 @@ contract CarLeasing {
         employee = payable(msg.sender);
     }
 
+
+
+    function addCar(
+        string memory _model,
+        string memory _color,
+        uint256 _year,
+        uint256 _originalValue,
+        uint256 _currentMilage
+    ) public returns (uint256) {
+        uint256 token;
+        token = carContract.addCar(_model, _color, _year, _originalValue, _currentMilage);
+        return token;
+    }
+
     /**
      * @notice Calculates the monthly quota for leasing a car based on various factors.
      * @dev The final quota is affected by mileage cap, contract duration, driver experience, car value,
@@ -197,6 +211,16 @@ contract CarLeasing {
         delete contracts[msg.sender];
     }
 
+    function getContract(address _Owner)
+        external
+        view
+        onlyEmployee
+        returns (Contract memory)
+    {
+        Contract storage con = contracts[_Owner];
+        return con;
+    }
+
     function getInactiveContracts()
         external
         view
@@ -314,23 +338,6 @@ contract CarLeasing {
         if (duration == ContractDuration.SIX_MONTHS) return 182 days;
         if (duration == ContractDuration.THREE_MONTHS) return 90 days;
         return 30 days; // case for duration == ONE_MONTH
-    }
-
-    /**
-     * @notice Helper function to set the start timestamp of a contract for testing purposes.
-     * @dev Only the contract employee can call this function. This is only for testing purposes and would not be included in a real contract.
-     * @param leasee The address of the leasee whose contract start timestamp is being modified.
-     */
-    function setStartTimestampHelperFunction(address leasee)
-        external
-        onlyEmployee
-    {
-        Contract storage con = contracts[leasee];
-
-        require(con.existensFlag, "Contract does not exist.");
-        require(con.startTs > 0, "Contract is not active.");
-
-        con.startTs = 1685577600;
     }
 
     // Task 5a
