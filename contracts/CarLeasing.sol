@@ -55,15 +55,7 @@ contract CarLeasing {
     }
 
 
-    /**
-    * @notice Adds a new car in the Car contract.
-    * @param _model The model of the car
-    * @param _color The color of the car
-    * @param _year The manufacturing year of the car
-    * @param _originalValue The initial value of the car in dollar
-    * @param _currentMilage The current mileage of the car in miles.
-    * @return carToken The unique token ID of the newly added car.
-    */
+
     function addCar(
         string memory _model,
         string memory _color,
@@ -76,11 +68,12 @@ contract CarLeasing {
         return token;
     }
 
+    // Task 2
     /**
      * @notice Calculates the monthly quota for leasing a car based on various factors.
      * @dev The final quota is affected by mileage cap, contract duration, driver experience, car value,
      *      and the car's current mileage. This function is view-only and does not alter the contract state.
-     * @param _tokenId The unique identifier of the car being leased.
+     * @param _carToken The unique identifier of the car being leased.
      * @param mileageCap The selected mileage cap for the lease, which influences the monthly quota.
      *                   Options are SMALL (least miles), MEDIUM, LARGE, and UNLIMITED.
      * @param contractDuration The duration of the lease contract. Options are ONE_MONTH, THREE_MONTHS,
@@ -90,12 +83,12 @@ contract CarLeasing {
      * @return monthlyQuota The calculated monthly quota in Wei.
      */
     function calculateMonthlyQuota(
-        uint256 _tokenId,
+        uint256 _carToken,
         MileageCap mileageCap,
         ContractDuration contractDuration,
         DrivingExperience drivingExperience
     ) public view returns (uint256) {
-        CarLibrary.CarStruct memory car = carContract.getCar(_tokenId);
+        CarLibrary.CarStruct memory car = carContract.getCar(_carToken);
         uint256 experienceFactor = drivingExperience == DrivingExperience.NEW_DRIVER
             ? 2
             : 1;
@@ -140,14 +133,17 @@ contract CarLeasing {
         return monthlyQuota * 1e6 + 1e7; // Scale by 1e6 Wei and add 1e7 Wei minimum
     }
 
-    ///Task 3
-    /// 3 Methods: proposeContract, deleteContractProposal, evaluateContract
 
-    /// @notice Propose a new contract to the leaser, the contract still needs to be confirmed by the leaser. The amount sent must be at least 4x the monthly quota (1 for the rent and 3 for the deposit).
-    /// @param carId the car NFT id to rent
-    /// @param drivingExperience the years of driving license ownage
-    /// @param mileageCap the selected mileage limit
-    /// @param duration the duration of the contract
+    //Task 3
+    // 3 Methods: proposeContract, deleteContractProposal, evaluateContract
+
+    /**
+     * @notice Propose a new contract to the leaser, the contract still needs to be confirmed by the leaser. The amount sent must be at least 4x the monthly quota (1 for the rent and 3 for the deposit).
+     * @param carId the car NFT id to rent
+     * @param drivingExperience the years of driving license ownage
+     * @param mileageCap the selected mileage limit
+     * @param duration the duration of the contract
+     */
     function proposeContract(
         uint32 carId,
         DrivingExperience drivingExperience,
@@ -157,12 +153,10 @@ contract CarLeasing {
         CarLibrary.CarStruct memory car = carContract.getCar(carId);
         // Checks if Car and Sender are valid
         require(car.year != 0, "[Error] The car doesn't exists.");
-        //checks if there is already a contract
         require(
             !contracts[msg.sender].existensFlag,
             "[Error] You already have a contract."
         );
-        // checks if the car is already leased
         require(car.leasee == address(0), "[Error] Car not available.");
 
         // calulation of the monthly Quota
@@ -177,7 +171,7 @@ contract CarLeasing {
             msg.value >= 4 * monthlyQuota,
             "[Error] Amount sent is not enough."
         );
-        // getting the durationfactors
+
         uint256 durationFactor = duration == ContractDuration.TWELVE_MONTHS
             ? 1
             : duration == ContractDuration.SIX_MONTHS
@@ -185,12 +179,12 @@ contract CarLeasing {
             : duration == ContractDuration.THREE_MONTHS
             ? 3
             : 5;
-        // checking if to much money was send
+
         require(
             msg.value <= (3 + (durationFactor)) * monthlyQuota,
             "[Error] Amount sent is too much."
         );
-        //creating contract
+
         contracts[msg.sender] = Contract(
             monthlyQuota,
             0,
@@ -204,23 +198,24 @@ contract CarLeasing {
         contractAddresses.push(msg.sender);
     }
 
-    ///@notice This function allows a leasee to delete their own contract proposal if it has not yet started.
-    ///@dev The contract proposal can only be deleted before it has been approved and started by an employee.
-
+    /**
+     * @notice This function allows a leasee to delete their own contract proposal if it has not yet started.
+     * @dev The contract proposal can only be deleted before it has been approved and started by an employee.
+     */
     function deleteContractProposal() external {
         uint256 monthlyQuota = contracts[msg.sender].monthlyQuota;
-        // checking that contract is not running
+
         require(
             contracts[msg.sender].startTs == 0,
             "Contract already started."
         );
-        // sending back the money
+
         payable(msg.sender).transfer(
             3 * monthlyQuota + contracts[msg.sender].amountPayed
         );
         delete contracts[msg.sender];
     }
-    // helper function the see the contract proposals
+
     function getContract(address _Owner)
         external
         view
@@ -230,7 +225,7 @@ contract CarLeasing {
         Contract storage con = contracts[_Owner];
         return con;
     }
-    // helper function to see the inactive contracts
+
     function getInactiveContracts()
         external
         view
@@ -261,22 +256,24 @@ contract CarLeasing {
         return inactiveContracts;
     }
 
-    ///@notice This function allows an authorized employee to evaluate a lease contract for a given leasee.
-    ///@dev The function can either approve or reject the contract based on the `accept` parameter.
-    ///@param leasee The address of the leasee whose contract is being evaluated.
-    ///@param accept A boolean indicating whether to accept or reject the contract.
+    /**
+     * @notice This function allows an authorized employee to evaluate a lease contract for a given leasee.
+     * @dev The function can either approve or reject the contract based on the `accept` parameter.
+     * @param leasee The address of the leasee whose contract is being evaluated.
+     * @param accept A boolean indicating whether to accept or reject the contract.
+     */
     function evaluateContract(address leasee, bool accept)
         external
         onlyEmployee
     {
         Contract storage con = contracts[leasee];
-        // checking if contract is available
+
         require(
             con.monthlyQuota > 0,
             "Leasee doesn't have contracts to evaluate."
         );
         require(con.startTs == 0, "Leasee contract has already started.");
-        // giving the car to the user
+
         if (accept) {
             CarLibrary.CarStruct memory car = carContract.getCar(con.carId);
             require(car.leasee == address(0), "Car is already rented!");
@@ -285,14 +282,13 @@ contract CarLeasing {
             car.leasee = leasee;
             transferrableAmount += con.amountPayed;
         } else {
-            // refund the money
             payable(leasee).transfer(3 * con.monthlyQuota + con.amountPayed);
             delete contracts[leasee];
         }
     }
-
+    
+    // Task 4
     /**
-     *Task 4
      * @dev this function lets only employees to check if a customer is insolvent and delete the contract
      * @dev the deposit will be refunded
      */
@@ -376,7 +372,6 @@ contract CarLeasing {
 
         // reset car availability
         carContract.getCar(con.carId).leasee = address(0);
-        //CarToken.cars[con.carId].leasee = address(0);
 
         // remove the contract
         delete contracts[msg.sender];
