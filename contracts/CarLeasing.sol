@@ -136,7 +136,7 @@ contract CarLeasing {
         // Checks if Car and Sender are valid
         require(car.year != 0, "[Error] The car doesn't exists.");
         require(
-            contracts[msg.sender].existensFlag,
+            !contracts[msg.sender].existensFlag,
             "[Error] You already have a contract."
         );
         require(car.leasee == address(0), "[Error] Car not available.");
