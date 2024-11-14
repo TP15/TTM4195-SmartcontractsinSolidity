@@ -282,7 +282,6 @@ contract CarLeasing {
             con.startTs = uint32(block.timestamp);
             con.isactiveFlag = true;
             car.leasee = leasee;
-            transferrableAmount += con.amountPayed;
         } else {
             payable(leasee).transfer(3 * con.monthlyQuota + con.amountPayed);
             delete contracts[leasee];
