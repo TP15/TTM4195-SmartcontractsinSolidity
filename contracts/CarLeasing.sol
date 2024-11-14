@@ -22,8 +22,6 @@ contract CarLeasing {
     address[] private contractAddresses; // Track addresses with contracts
     Car public carContract; // Reference to Car contract
 
-    
-    uint256 transferrableAmount;
 
     enum MileageCap {
         SMALL,
